@@ -295,9 +295,18 @@ func resourceFunctionAppCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	basicAppSettings, err := getBasicFunctionAppAppSettings(d, appServiceTier, endpointSuffix)
+	appSettings, err := expandFunctionAppAppSettings(d, appServiceTier, endpointSuffix)
 	if err != nil {
 		return err
+	}
+
+	allSettings := []web.NameValuePair{}
+
+	for k, v := range appSettings {
+		allSettings = append(allSettings, web.NameValuePair{
+			Name:  utils.String(k),
+			Value: v,
+		})
 	}
 
 	siteConfig, err := expandFunctionAppSiteConfig(d)
@@ -305,7 +314,7 @@ func resourceFunctionAppCreate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("Error expanding `site_config` for Function App %q (Resource Group %q): %s", name, resourceGroup, err)
 	}
 
-	siteConfig.AppSettings = &basicAppSettings
+	siteConfig.AppSettings = &allSettings
 
 	siteEnvelope := web.Site{
 		Kind:     &kind,
